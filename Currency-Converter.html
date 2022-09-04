@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>"Currency Converter"</title>
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
+
+<style>
+    select, input {
+        padding: 7px 10px;
+        margin: 10px 10px;
+        border: 1px solid black;
+        border-radius: 5px;
+        font-weight: 500;
+        font-size: 120%;
+    }
+    select {
+        color: blue;
+        background-color: aliceblue;
+    }
+    h3 {
+        margin: 15px 25px;
+        font-weight: 600;
+    }
+    h3 i {
+        font-weight: 500;
+    }
+</style>
+
+<script type="text/babel">
+    const url = "https://cdn.cur.su/api/nbu.json"   // Site with exchange rates for today
+
+    const  Header = (props) => {                    // Header with exchange rates
+        const { USDUAH, USDEUR } = props
+        return (
+            <h3>USD&nbsp;&nbsp; <i>{USDUAH}</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; EUR&nbsp;&nbsp; <i>{(USDUAH/USDEUR).toFixed(4)}</i></h3>
+        )
+    }
+
+    class Converter extends React.Component {       // Component with currency conversion
+        state = {               // State of Currency Converter
+            cur1: "USD",
+            cur2: "UAH",
+            val1: 0,
+            val2: 0
+        }
+
+        rate = (cur1, cur2) => {                    // Calculation of the exchange rate at two cross rates
+            const { USDUAH, USDEUR } = this.props
+            switch (cur1) {
+                case "USD": {
+                    switch (cur2) {
+                        case "UAH": return USDUAH
+                        case "EUR": return USDEUR
+                        case "USD": return 1
+                        default: return 1
+                    }
+                }
+                case "EUR": {
+                    switch (cur2) {
+                        case "UAH": return USDUAH / USDEUR
+                        case "EUR": return 1
+                        case "USD": return 1 / USDEUR
+                        default: return 1
+                        }
+                }
+                case "UAH": {
+                    switch (cur2) {
+                        case "UAH": return 1
+                        case "EUR": return USDEUR / USDUAH
+                        case "USD": return 1 / USDUAH
+                        default: return 1
+                    }
+                }
+            }
+        }
+
+        changeCur1 = (e) => {                   // Changing the first currency
+            const { cur2, val1 } = this.state
+            const { value} = e.target
+            this.setState({cur1: value, val2: (val1 * this.rate(value, cur2)).toFixed(2)})
+        }
+
+        changeCur2 = (e) => {                   // Changing the second currency
+            const { cur1, val1 } = this.state
+            const { value} = e.target
+            this.setState({cur2: value, val2: (val1 * this.rate(cur1, value)).toFixed(2)})
+        }
+
+        changeVal1 = (e) => {                   // Changing the number of units in the first currency
+            const { cur1, cur2 } = this.state
+            const { value} = e.target
+            this.setState({val1: value, val2: (value * this.rate(cur1, cur2)).toFixed(2)})
+        }
+
+        changeVal2 = (e) => {                   // Changing the number of units in the second currency
+            const { cur1, cur2 } = this.state
+            const { value} = e.target
+            this.setState({val2: value, val1: (value * this.rate(cur2, cur1)).toFixed(2)})
+        }
+
+        render () {                             // Currency conversion
+            const { val1, val2} = this.state
+            return (
+                 <div>
+                     <div>
+                         <div>
+                             <select className="form-select" onChange={this.changeCur1} >
+                                 <option value="USD">USD&nbsp;&nbsp;</option>
+                                 <option value="EUR">EUR</option>
+                                 <option value="UAH">UAH</option>
+                             </select>
+                             <input type="number" value={val1} onChange={this.changeVal1} step={0.01} />
+                         </div>
+                     </div>
+                     <div>
+                         <div>
+                             <select className="form-select" onChange={this.changeCur2} >
+                                 <option value="UAH">UAH&nbsp;&nbsp;</option>
+                                 <option value="EUR">EUR</option>
+                                 <option value="USD">USD</option>
+                             </select>
+                             <input type="number" value={val2} onChange={this.changeVal2} step={0.01} />
+                         </div>
+                     </div>
+                 </div>
+            )
+        }
+    }
+
+    class CurrencyConverter extends React.Component {
+        state = {                   // Cross exchange rates against USD
+            USDUAH: 1,
+            USDEUR: 1
+        }
+
+        componentDidMount = () => {
+            this.fetchData()
+        }
+
+        fetchData = () => {          // Loading exchange rates
+            axios(url)
+                .then((res) => {
+                    const rates = res.data.rates            // Cross Exchange rates against USD
+                    this.setState({USDUAH: rates.UAH, USDEUR: rates.EUR})
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+        }
+
+        render() {
+            const { USDUAH, USDEUR } = this.state
+            return (
+                <div>
+                    <Header USDUAH={USDUAH} USDEUR={USDEUR} />
+                    <hr/>
+                    <Converter USDUAH={USDUAH} USDEUR={USDEUR} />
+                </div>
+            )
+        }
+    }
+
+    ReactDOM.render(<CurrencyConverter />, document.getElementById("root"))
+
+</script>
+</head>
+
+<body>
+    <div id="root"></div>
+</body>
+</html>
